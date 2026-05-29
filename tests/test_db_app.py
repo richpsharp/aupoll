@@ -50,6 +50,8 @@ def test_app_accepts_response_and_renders_results(tmp_path: Path, monkeypatch):
     body = results_response.get_data(as_text=True)
     assert "Test Results" in body
     assert "Mean" in body
+    assert "WWF Metric" in body
+    assert "100%" in body
     assert "3" in body
 
 
