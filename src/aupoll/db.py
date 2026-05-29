@@ -12,13 +12,9 @@ from .config import PollConfig
 DEFAULT_DB_PATH = "/data/aupoll.sqlite3"
 
 
-def database_path() -> str:
-    return os.environ.get("AUPOLL_DB_PATH", DEFAULT_DB_PATH)
-
-
 @contextmanager
 def connect(path: str | None = None) -> Iterator[sqlite3.Connection]:
-    db_path = path or database_path()
+    db_path = path or os.environ.get("AUPOLL_DB_PATH", DEFAULT_DB_PATH)
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(db_path)
     connection.row_factory = sqlite3.Row
@@ -144,4 +140,3 @@ def answers_by_question(connection: sqlite3.Connection) -> dict[str, list[float]
     for row in rows:
         values.setdefault(row["question_id"], []).append(float(row["value"]))
     return values
-
