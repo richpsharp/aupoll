@@ -9,14 +9,21 @@ class Summary:
     count: int
     mean: float | None
     median: float | None
-    stdev: float | None
-    p05: float | None
-    p95: float | None
+    standard_deviation: float | None
+    fifth_percentile: float | None
+    ninety_fifth_percentile: float | None
 
 
 def summarize(values: list[float]) -> Summary:
     if not values:
-        return Summary(count=0, mean=None, median=None, stdev=None, p05=None, p95=None)
+        return Summary(
+            count=0,
+            mean=None,
+            median=None,
+            standard_deviation=None,
+            fifth_percentile=None,
+            ninety_fifth_percentile=None,
+        )
 
     ordered = sorted(values)
     count = len(ordered)
@@ -27,9 +34,9 @@ def summarize(values: list[float]) -> Summary:
         count=count,
         mean=mean,
         median=percentile(ordered, 50),
-        stdev=sqrt(variance),
-        p05=percentile(ordered, 5),
-        p95=percentile(ordered, 95),
+        standard_deviation=sqrt(variance),
+        fifth_percentile=percentile(ordered, 5),
+        ninety_fifth_percentile=percentile(ordered, 95),
     )
 
 

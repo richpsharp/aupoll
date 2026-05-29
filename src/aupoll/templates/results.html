@@ -17,14 +17,14 @@
   <div class="plot">
     <div class="axis-label">Frequency</div>
     <div class="y-axis">
-      {% for tick in figure.y_ticks %}
+      {% for tick in figure.count_axis_ticks %}
       <span style="--tick-percent: {{ tick.percent }}">{{ tick.value }}</span>
       {% endfor %}
     </div>
     <div>
       <div class="histogram" style="--bucket-count: {{ figure.buckets|length }}">
         {% for bucket in figure.buckets %}
-        {% set height = 2 if figure.y_max == 0 else (bucket.count / figure.y_max * 100) %}
+        {% set height = 2 if figure.count_axis_maximum == 0 else (bucket.count / figure.count_axis_maximum * 100) %}
         <div class="bar-wrap" title="{{ bucket.count }} responses">
           <div class="bar {% if bucket.count == 0 %}empty{% endif %}" style="height: {{ height }}%"></div>
         </div>
@@ -42,9 +42,9 @@
     <dt>Responses</dt><dd>{{ figure.summary.count }}</dd>
     <dt>Mean</dt><dd>{{ format_number(figure.summary.mean) }}</dd>
     <dt>Median</dt><dd>{{ format_number(figure.summary.median) }}</dd>
-    <dt>Stdev</dt><dd>{{ format_number(figure.summary.stdev) }}</dd>
-    <dt>5th pct.</dt><dd>{{ format_number(figure.summary.p05) }}</dd>
-    <dt>95th pct.</dt><dd>{{ format_number(figure.summary.p95) }}</dd>
+    <dt>Stdev</dt><dd>{{ format_number(figure.summary.standard_deviation) }}</dd>
+    <dt>5th pct.</dt><dd>{{ format_number(figure.summary.fifth_percentile) }}</dd>
+    <dt>95th pct.</dt><dd>{{ format_number(figure.summary.ninety_fifth_percentile) }}</dd>
   </dl>
 </section>
 {% endfor %}

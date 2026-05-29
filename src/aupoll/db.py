@@ -9,18 +9,18 @@ from typing import Iterator
 from .config import PollConfig
 
 
-DEFAULT_DB_PATH = "/data/aupoll.sqlite3"
+DEFAULT_DATABASE_PATH = "/data/aupoll.sqlite3"
 
 
 def database_path() -> str:
-    return os.environ.get("AUPOLL_DB_PATH", DEFAULT_DB_PATH)
+    return os.environ.get("AUPOLL_DB_PATH", DEFAULT_DATABASE_PATH)
 
 
 @contextmanager
 def connect(path: str | None = None) -> Iterator[sqlite3.Connection]:
-    db_path = path or database_path()
-    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(db_path)
+    database_file_path = path or database_path()
+    Path(database_file_path).parent.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(database_file_path)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
     try:
@@ -34,13 +34,13 @@ def connect(path: str | None = None) -> Iterator[sqlite3.Connection]:
 
 
 def is_initialized(connection: sqlite3.Connection) -> bool:
-    row = connection.execute(
+    meta_table_row = connection.execute(
         "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'meta'"
     ).fetchone()
-    if row is None:
+    if meta_table_row is None:
         return False
-    configured = connection.execute("SELECT value FROM meta WHERE key = 'configured_at'").fetchone()
-    return configured is not None
+    configured_at_row = connection.execute("SELECT value FROM meta WHERE key = 'configured_at'").fetchone()
+    return configured_at_row is not None
 
 
 def initialize(connection: sqlite3.Connection, config: PollConfig) -> None:
@@ -140,8 +140,8 @@ def insert_response(connection: sqlite3.Connection, answers: dict[str, float]) -
 
 def answers_by_question(connection: sqlite3.Connection) -> dict[str, list[float]]:
     rows = connection.execute("SELECT question_id, value FROM answers ORDER BY question_id, value").fetchall()
-    values: dict[str, list[float]] = {}
+    answers: dict[str, list[float]] = {}
     for row in rows:
-        values.setdefault(row["question_id"], []).append(float(row["value"]))
-    return values
+        answers.setdefault(row["question_id"], []).append(float(row["value"]))
+    return answers
 

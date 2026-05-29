@@ -7,7 +7,7 @@ from typing import Any
 
 from flask import Flask, Response, redirect, render_template, request, url_for
 
-from . import db
+from . import db as database
 from .stats import histogram, summarize
 
 
@@ -21,48 +21,48 @@ def create_app() -> Flask:
 
     @app.get("/")
     def index() -> str | tuple[str, int]:
-        with db.connect() as connection:
-            if not db.is_initialized(connection):
+        with database.connect() as connection:
+            if not database.is_initialized(connection):
                 return render_message("AUpoll is not initialized yet.", 503)
-            poll = db.poll(connection)
-            questions = db.questions(connection)
+            poll = database.poll(connection)
+            questions = database.questions(connection)
         return render_template("poll.html", poll=poll, questions=questions, error=None)
 
     @app.post("/submit")
     def submit() -> Response | tuple[str, int]:
-        with db.connect() as connection:
-            if not db.is_initialized(connection):
+        with database.connect() as connection:
+            if not database.is_initialized(connection):
                 return render_message("AUpoll is not initialized yet.", 503)
-            poll = db.poll(connection)
-            questions = db.questions(connection)
+            poll = database.poll(connection)
+            questions = database.questions(connection)
             parsed, error = parse_answers(request.form, questions)
             if error:
                 return render_template("poll.html", poll=poll, questions=questions, error=error), 400
-            db.insert_response(connection, parsed)
+            database.insert_response(connection, parsed)
         return redirect(url_for("results", submitted="1"))
 
     @app.get("/results")
     def results() -> str | tuple[str, int]:
-        with db.connect() as connection:
-            if not db.is_initialized(connection):
+        with database.connect() as connection:
+            if not database.is_initialized(connection):
                 return render_message("AUpoll is not initialized yet.", 503)
-            poll = db.poll(connection)
-            questions = db.questions(connection)
-            answers = db.answers_by_question(connection)
+            poll = database.poll(connection)
+            questions = database.questions(connection)
+            answers = database.answers_by_question(connection)
 
         figures = []
         for question in questions:
             values = answers.get(question["id"], [])
             buckets = histogram(values, question["minimum"], question["maximum"], question["step"])
             max_count = max([int(bucket["count"]) for bucket in buckets] or [0])
-            y_max, y_ticks = count_axis(max_count)
+            count_axis_maximum, count_axis_ticks = count_axis(max_count)
             figures.append(
                 {
                     "question": question,
                     "summary": summarize(values),
                     "buckets": buckets,
-                    "y_max": y_max,
-                    "y_ticks": y_ticks,
+                    "count_axis_maximum": count_axis_maximum,
+                    "count_axis_ticks": count_axis_ticks,
                 }
             )
         return render_template(
@@ -78,17 +78,17 @@ def create_app() -> Flask:
 def parse_answers(form: Any, questions: list[Any]) -> tuple[dict[str, float], str | None]:
     answers: dict[str, float] = {}
     for question in questions:
-        raw_value = form.get(question["id"])
-        if raw_value is None:
+        submitted_value = form.get(question["id"])
+        if submitted_value is None:
             return {}, "Please answer every question."
         try:
-            value = float(raw_value)
+            value = float(submitted_value)
         except ValueError:
             return {}, "One of the answers was not a number."
         if value < question["minimum"] or value > question["maximum"]:
             return {}, "One of the answers was outside the allowed range."
-        offset = (value - question["minimum"]) / question["step"]
-        if abs(offset - round(offset)) > 0.000001:
+        scale_step_offset = (value - question["minimum"]) / question["step"]
+        if abs(scale_step_offset - round(scale_step_offset)) > 0.000001:
             return {}, "One of the answers did not match the configured scale."
         answers[question["id"]] = value
     return answers, None
@@ -107,17 +107,17 @@ def count_axis(max_count: int) -> tuple[int, list[dict[str, int | float]]]:
         return 1, [{"value": 0, "percent": 0}, {"value": 1, "percent": 100}]
 
     if max_count <= 5:
-        y_max = max_count
+        axis_maximum = max_count
         step = 1
     else:
         step = _nice_step(ceil(max_count / 4))
-        y_max = ceil(max_count / step) * step
+        axis_maximum = ceil(max_count / step) * step
 
     ticks = [
-        {"value": value, "percent": value / y_max * 100}
-        for value in range(0, y_max + step, step)
+        {"value": value, "percent": value / axis_maximum * 100}
+        for value in range(0, axis_maximum + step, step)
     ]
-    return y_max, ticks
+    return axis_maximum, ticks
 
 
 def _nice_step(minimum: int) -> int:

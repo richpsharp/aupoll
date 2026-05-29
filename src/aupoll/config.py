@@ -30,19 +30,19 @@ class QuestionConfig:
 
 def load_config(path: str | Path) -> PollConfig:
     with Path(path).open("r", encoding="utf-8") as handle:
-        raw = yaml.safe_load(handle) or {}
-    return parse_config(raw)
+        raw_config = yaml.safe_load(handle) or {}
+    return parse_config(raw_config)
 
 
-def parse_config(raw: dict[str, Any]) -> PollConfig:
-    poll = raw.get("poll") or {}
-    questions = raw.get("questions") or []
+def parse_config(raw_config: dict[str, Any]) -> PollConfig:
+    poll = raw_config.get("poll") or {}
+    questions = raw_config.get("questions") or []
     if not isinstance(questions, list) or not questions:
         raise ValueError("config must include at least one question")
 
-    parsed_questions = [_parse_question(item, index) for index, item in enumerate(questions)]
-    ids = [question.id for question in parsed_questions]
-    if len(ids) != len(set(ids)):
+    parsed_questions = [_parse_question(question_data, index) for index, question_data in enumerate(questions)]
+    question_ids = [question.id for question in parsed_questions]
+    if len(question_ids) != len(set(question_ids)):
         raise ValueError("question ids must be unique")
 
     return PollConfig(
@@ -54,13 +54,13 @@ def parse_config(raw: dict[str, Any]) -> PollConfig:
     )
 
 
-def _parse_question(raw: Any, index: int) -> QuestionConfig:
-    if not isinstance(raw, dict):
+def _parse_question(raw_question: Any, index: int) -> QuestionConfig:
+    if not isinstance(raw_question, dict):
         raise ValueError(f"question {index + 1} must be a mapping")
 
-    question_id = str(raw.get("id") or "").strip()
-    prompt = str(raw.get("prompt") or "").strip()
-    scale = raw.get("scale") or {}
+    question_id = str(raw_question.get("id") or "").strip()
+    prompt = str(raw_question.get("prompt") or "").strip()
+    scale = raw_question.get("scale") or {}
 
     if not question_id:
         raise ValueError(f"question {index + 1} is missing id")
@@ -82,7 +82,7 @@ def _parse_question(raw: Any, index: int) -> QuestionConfig:
     return QuestionConfig(
         id=question_id,
         prompt=prompt,
-        help=str(raw.get("help") or ""),
+        help=str(raw_question.get("help") or ""),
         minimum=minimum,
         maximum=maximum,
         step=step,
@@ -96,6 +96,6 @@ def _number(value: Any, label: str) -> float:
         raise ValueError(f"{label} is required")
     try:
         return float(value)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(f"{label} must be a number") from exc
+    except (TypeError, ValueError) as parse_error:
+        raise ValueError(f"{label} must be a number") from parse_error
 
