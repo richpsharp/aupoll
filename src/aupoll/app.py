@@ -54,7 +54,7 @@ def create_app() -> Flask:
         for question in questions:
             values = answers.get(question["id"], [])
             buckets = histogram(values, question["minimum"], question["maximum"], question["step"])
-            max_count = max([int(bucket["count"]) for bucket in buckets] or [0])
+            max_count = max(int(bucket["count"]) for bucket in buckets)
             y_max, y_ticks = count_axis(max_count)
             figures.append(
                 {
@@ -128,7 +128,6 @@ def _nice_step(minimum: int) -> int:
         step = multiplier * magnitude
         if step >= minimum:
             return step
-    return 10 * magnitude
 
 
 def render_message(message: str, status: int) -> tuple[str, int]:

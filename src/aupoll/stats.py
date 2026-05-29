@@ -34,8 +34,6 @@ def summarize(values: list[float]) -> Summary:
 
 
 def percentile(sorted_values: list[float], percentile_value: float) -> float:
-    if not sorted_values:
-        raise ValueError("percentile requires at least one value")
     if percentile_value <= 0:
         return sorted_values[0]
     if percentile_value >= 100:
@@ -55,9 +53,6 @@ def histogram(values: list[float], minimum: float, maximum: float, step: float) 
         rounded = round(current, 10)
         buckets.append({"value": rounded, "count": 0})
         current += step
-
-    if not buckets:
-        return []
 
     for value in values:
         index = round((value - minimum) / step)
