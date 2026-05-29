@@ -124,10 +124,11 @@ def _nice_step(minimum: int) -> int:
     magnitude = 1
     while magnitude * 10 <= minimum:
         magnitude *= 10
-    for multiplier in (1, 2, 5, 10):
+    for multiplier in (1, 2, 5):
         step = multiplier * magnitude
         if step >= minimum:
             return step
+    return 10 * magnitude
 
 
 def render_message(message: str, status: int) -> tuple[str, int]:
