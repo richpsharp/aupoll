@@ -1,0 +1,32 @@
+poll:
+  title: "AUpoll: Actually Useful Poll"
+  subtitle: "A compact survey whose results are readable the moment someone finishes."
+  submit_label: "See the results"
+  results_title: "What respondents said"
+questions:
+  - id: usefulness
+    prompt: "How useful would this poll format be for your team?"
+    help: "Choose the point that best matches your first reaction."
+    scale:
+      min: 1
+      max: 7
+      step: 1
+      min_label: "Not useful"
+      max_label: "Extremely useful"
+  - id: clarity
+    prompt: "How clear was the question flow?"
+    scale:
+      min: 1
+      max: 7
+      step: 1
+      min_label: "Confusing"
+      max_label: "Crystal clear"
+  - id: confidence
+    prompt: "How confident would you feel sharing these results?"
+    scale:
+      min: 1
+      max: 7
+      step: 1
+      min_label: "Not confident"
+      max_label: "Very confident"
+
