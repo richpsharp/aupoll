@@ -106,9 +106,6 @@ def histogram(values: list[float], minimum: float, maximum: float, step: float) 
         buckets.append({"value": rounded, "count": 0})
         current += step
 
-    if not buckets:
-        return []
-
     for value in values:
         index = round((value - minimum) / step)
         if 0 <= index < len(buckets):
