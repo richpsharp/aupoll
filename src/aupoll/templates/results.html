@@ -15,16 +15,21 @@
   <div>
     <h2>{{ figure.question["prompt"] }}</h2>
     {% if figure.summary.count %}
-    <div class="histogram" style="--bucket-count: {{ figure.buckets|length }}">
-      {% for bucket in figure.buckets %}
-      {% set height = 2 if figure.max_count == 0 else (bucket.count / figure.max_count * 100) %}
-      <div class="bar-wrap" title="{{ bucket.count }} responses">
-        <div class="bar {% if bucket.count == 0 %}empty{% endif %}" style="height: {{ height }}%"></div>
+    <div class="plot">
+      <div class="axis-label">Frequency</div>
+      <div>
+        <div class="histogram" style="--bucket-count: {{ figure.buckets|length }}">
+          {% for bucket in figure.buckets %}
+          {% set height = 2 if figure.max_count == 0 else (bucket.count / figure.max_count * 100) %}
+          <div class="bar-wrap" title="{{ bucket.count }} responses">
+            <div class="bar {% if bucket.count == 0 %}empty{% endif %}" style="height: {{ height }}%"></div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="ticks" style="--bucket-count: {{ figure.buckets|length }}">
+          {% for bucket in figure.buckets %}<span>{{ format_number(bucket.value) }}</span>{% endfor %}
+        </div>
       </div>
-      {% endfor %}
-    </div>
-    <div class="ticks" style="--bucket-count: {{ figure.buckets|length }}">
-      {% for bucket in figure.buckets %}<span>{{ format_number(bucket.value) }}</span>{% endfor %}
     </div>
     {% else %}
     <p class="empty-note">No responses yet.</p>
@@ -43,4 +48,3 @@
 
 <p><a class="back" href="{{ url_for('index') }}">Add another response</a></p>
 {% endblock %}
-

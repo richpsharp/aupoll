@@ -165,38 +165,62 @@ legend {
   font-weight: 500;
 }
 
+.plot {
+  display: grid;
+  grid-template-columns: 34px max-content;
+  align-items: end;
+  gap: 8px;
+  max-width: 420px;
+}
+
+.axis-label {
+  align-self: center;
+  color: var(--ink);
+  font-size: 1.04rem;
+  line-height: 1;
+  text-align: center;
+  transform: rotate(-90deg);
+  white-space: nowrap;
+}
+
 .histogram {
   display: grid;
-  grid-template-columns: repeat(var(--bucket-count), minmax(20px, 1fr));
+  grid-template-columns: repeat(var(--bucket-count), 28px);
   align-items: end;
-  gap: 7px;
-  min-height: 210px;
-  padding-top: 10px;
-  border-bottom: 1px solid var(--ink);
+  justify-content: start;
+  gap: 0;
+  height: 154px;
+  padding: 0 0 0 8px;
+  border-bottom: 1px solid #4b4844;
+  border-left: 1px solid #4b4844;
 }
 
 .bar-wrap {
   display: grid;
   align-items: end;
-  height: 200px;
+  height: 153px;
 }
 
 .bar {
   min-height: 2px;
-  background: var(--accent);
+  border: 1px solid #7d3d1d;
+  background: #d7681e;
 }
 
 .bar.empty {
-  background: #e5dfd7;
+  border-color: transparent;
+  background: transparent;
 }
 
 .ticks {
   display: grid;
-  grid-template-columns: repeat(var(--bucket-count), minmax(20px, 1fr));
-  gap: 7px;
+  grid-template-columns: repeat(var(--bucket-count), 28px);
+  justify-content: start;
+  gap: 0;
   margin-top: 8px;
+  padding-left: 8px;
   color: var(--muted);
-  font: 0.78rem/1 Arial, sans-serif;
+  font: 0.74rem/1 Arial, sans-serif;
   text-align: center;
 }
 
@@ -236,4 +260,3 @@ legend {
     grid-template-columns: 1fr;
   }
 }
-
