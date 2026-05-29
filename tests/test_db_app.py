@@ -21,9 +21,9 @@ def sample_config():
 
 
 def test_initialize_creates_configured_database(tmp_path: Path):
-    db_path = tmp_path / "poll.sqlite3"
+    database_file_path = tmp_path / "poll.sqlite3"
 
-    with connect(str(db_path)) as connection:
+    with connect(str(database_file_path)) as connection:
         assert not is_initialized(connection)
         initialize(connection, sample_config())
         assert is_initialized(connection)
@@ -33,9 +33,9 @@ def test_initialize_creates_configured_database(tmp_path: Path):
 
 
 def test_app_accepts_response_and_renders_results(tmp_path: Path, monkeypatch):
-    db_path = tmp_path / "poll.sqlite3"
-    monkeypatch.setenv("AUPOLL_DB_PATH", str(db_path))
-    with connect(str(db_path)) as connection:
+    database_file_path = tmp_path / "poll.sqlite3"
+    monkeypatch.setenv("AUPOLL_DB_PATH", str(database_file_path))
+    with connect(str(database_file_path)) as connection:
         initialize(connection, sample_config())
 
     app = create_app()
@@ -51,4 +51,17 @@ def test_app_accepts_response_and_renders_results(tmp_path: Path, monkeypatch):
     assert "Test Results" in body
     assert "Mean" in body
     assert "3" in body
+
+
+def test_app_reports_uninitialized_database(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("AUPOLL_DB_PATH", str(tmp_path / "poll.sqlite3"))
+    app = create_app()
+    app.config.update(TESTING=True)
+    client = app.test_client()
+
+    for method, path in (("GET", "/"), ("POST", "/submit"), ("GET", "/results")):
+        response = client.open(path, method=method)
+
+        assert response.status_code == 503
+        assert "AUpoll is not initialized yet." in response.get_data(as_text=True)
 

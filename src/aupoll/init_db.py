@@ -1,3 +1,5 @@
+"""Command-line entry point for initializing the AUpoll database."""
+
 from __future__ import annotations
 
 import os
@@ -7,6 +9,11 @@ from .db import connect, initialize, is_initialized
 
 
 def main() -> int:
+    """Initialize the configured database if it has not already been seeded.
+
+    Returns:
+        Process exit code.
+    """
     config_path = os.environ.get("AUPOLL_CONFIG_PATH", "/config/poll.yaml")
     with connect() as connection:
         if is_initialized(connection):
@@ -20,4 +27,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
