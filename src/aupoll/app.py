@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html
 import os
+from math import ceil
 from typing import Any
 
 from flask import Flask, Response, redirect, render_template, request, url_for
@@ -53,12 +54,15 @@ def create_app() -> Flask:
         for question in questions:
             values = answers.get(question["id"], [])
             buckets = histogram(values, question["minimum"], question["maximum"], question["step"])
+            max_count = max([int(bucket["count"]) for bucket in buckets] or [0])
+            y_max, y_ticks = count_axis(max_count)
             figures.append(
                 {
                     "question": question,
                     "summary": summarize(values),
                     "buckets": buckets,
-                    "max_count": max([int(bucket["count"]) for bucket in buckets] or [0]),
+                    "y_max": y_max,
+                    "y_ticks": y_ticks,
                 }
             )
         return render_template(
@@ -98,6 +102,35 @@ def format_number(value: float | None) -> str:
     return f"{value:.1f}"
 
 
+def count_axis(max_count: int) -> tuple[int, list[dict[str, int | float]]]:
+    if max_count <= 0:
+        return 1, [{"value": 0, "percent": 0}, {"value": 1, "percent": 100}]
+
+    if max_count <= 5:
+        y_max = max_count
+        step = 1
+    else:
+        step = _nice_step(ceil(max_count / 4))
+        y_max = ceil(max_count / step) * step
+
+    ticks = [
+        {"value": value, "percent": value / y_max * 100}
+        for value in range(0, y_max + step, step)
+    ]
+    return y_max, ticks
+
+
+def _nice_step(minimum: int) -> int:
+    magnitude = 1
+    while magnitude * 10 <= minimum:
+        magnitude *= 10
+    for multiplier in (1, 2, 5, 10):
+        step = multiplier * magnitude
+        if step >= minimum:
+            return step
+    return 10 * magnitude
+
+
 def render_message(message: str, status: int) -> tuple[str, int]:
     return (
         f"<!doctype html><title>AUpoll</title><body><main><h1>{html.escape(message)}</h1></main></body>",
@@ -108,4 +141,3 @@ def render_message(message: str, status: int) -> tuple[str, int]:
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8000"))
     create_app().run(host="0.0.0.0", port=port)
-

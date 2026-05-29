@@ -12,29 +12,32 @@
 
 {% for figure in figures %}
 <section class="figure">
-  <div>
-    <h2>{{ figure.question["prompt"] }}</h2>
-    {% if figure.summary.count %}
-    <div class="plot">
-      <div class="axis-label">Frequency</div>
-      <div>
-        <div class="histogram" style="--bucket-count: {{ figure.buckets|length }}">
-          {% for bucket in figure.buckets %}
-          {% set height = 2 if figure.max_count == 0 else (bucket.count / figure.max_count * 100) %}
-          <div class="bar-wrap" title="{{ bucket.count }} responses">
-            <div class="bar {% if bucket.count == 0 %}empty{% endif %}" style="height: {{ height }}%"></div>
-          </div>
-          {% endfor %}
+  <h2>{{ figure.question["prompt"] }}</h2>
+  {% if figure.summary.count %}
+  <div class="plot">
+    <div class="axis-label">Frequency</div>
+    <div class="y-axis">
+      {% for tick in figure.y_ticks %}
+      <span style="--tick-percent: {{ tick.percent }}">{{ tick.value }}</span>
+      {% endfor %}
+    </div>
+    <div>
+      <div class="histogram" style="--bucket-count: {{ figure.buckets|length }}">
+        {% for bucket in figure.buckets %}
+        {% set height = 2 if figure.y_max == 0 else (bucket.count / figure.y_max * 100) %}
+        <div class="bar-wrap" title="{{ bucket.count }} responses">
+          <div class="bar {% if bucket.count == 0 %}empty{% endif %}" style="height: {{ height }}%"></div>
         </div>
-        <div class="ticks" style="--bucket-count: {{ figure.buckets|length }}">
-          {% for bucket in figure.buckets %}<span>{{ format_number(bucket.value) }}</span>{% endfor %}
-        </div>
+        {% endfor %}
+      </div>
+      <div class="ticks" style="--bucket-count: {{ figure.buckets|length }}">
+        {% for bucket in figure.buckets %}<span>{{ format_number(bucket.value) }}</span>{% endfor %}
       </div>
     </div>
-    {% else %}
-    <p class="empty-note">No responses yet.</p>
-    {% endif %}
   </div>
+  {% else %}
+  <p class="empty-note">No responses yet.</p>
+  {% endif %}
   <dl class="stats">
     <dt>Responses</dt><dd>{{ figure.summary.count }}</dd>
     <dt>Mean</dt><dd>{{ format_number(figure.summary.mean) }}</dd>
