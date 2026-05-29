@@ -1,3 +1,5 @@
+"""YAML configuration parsing and validation for AUpoll polls."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -9,6 +11,16 @@ import yaml
 
 @dataclass(frozen=True)
 class PollConfig:
+    """Top-level poll settings and ordered question definitions.
+
+    Attributes:
+        title: Poll page title.
+        subtitle: Supporting text shown under the title.
+        submit_label: Label for the submit button.
+        results_title: Heading for the results page.
+        questions: Ordered questions rendered in the poll.
+    """
+
     title: str
     subtitle: str
     submit_label: str
@@ -18,6 +30,19 @@ class PollConfig:
 
 @dataclass(frozen=True)
 class QuestionConfig:
+    """Validated configuration for one poll question.
+
+    Attributes:
+        id: Stable identifier used in form fields and answer rows.
+        prompt: Question text shown to respondents.
+        help: Optional helper text for the question.
+        minimum: Lowest accepted numeric answer.
+        maximum: Highest accepted numeric answer.
+        step: Required increment between accepted answers.
+        min_label: Display label for the low end of the scale.
+        max_label: Display label for the high end of the scale.
+    """
+
     id: str
     prompt: str
     help: str
@@ -29,12 +54,34 @@ class QuestionConfig:
 
 
 def load_config(path: str | Path) -> PollConfig:
+    """Load and parse a poll YAML file.
+
+    Args:
+        path: Filesystem path to the YAML configuration.
+
+    Returns:
+        Parsed poll configuration.
+
+    Raises:
+        ValueError: If the YAML content does not describe a valid poll.
+    """
     with Path(path).open("r", encoding="utf-8") as handle:
         raw_config = yaml.safe_load(handle) or {}
     return parse_config(raw_config)
 
 
 def parse_config(raw_config: dict[str, Any]) -> PollConfig:
+    """Parse raw configuration data into validated poll settings.
+
+    Args:
+        raw_config: Mapping loaded from a YAML configuration file.
+
+    Returns:
+        Parsed poll configuration with defaults applied.
+
+    Raises:
+        ValueError: If required poll or question settings are invalid.
+    """
     poll = raw_config.get("poll") or {}
     questions = raw_config.get("questions") or []
     if not isinstance(questions, list) or not questions:
@@ -55,6 +102,7 @@ def parse_config(raw_config: dict[str, Any]) -> PollConfig:
 
 
 def _parse_question(raw_question: Any, index: int) -> QuestionConfig:
+    """Validate and parse a single question mapping from configuration data."""
     if not isinstance(raw_question, dict):
         raise ValueError(f"question {index + 1} must be a mapping")
 
@@ -92,10 +140,10 @@ def _parse_question(raw_question: Any, index: int) -> QuestionConfig:
 
 
 def _number(value: Any, label: str) -> float:
+    """Coerce a required numeric configuration value to ``float``."""
     if value is None:
         raise ValueError(f"{label} is required")
     try:
         return float(value)
     except (TypeError, ValueError) as parse_error:
         raise ValueError(f"{label} must be a number") from parse_error
-

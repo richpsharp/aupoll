@@ -1,3 +1,5 @@
+"""Flask application routes and presentation helpers for AUpoll."""
+
 from __future__ import annotations
 
 import html
@@ -12,6 +14,11 @@ from .stats import histogram, summarize
 
 
 def create_app() -> Flask:
+    """Create the Flask application and register poll routes.
+
+    Returns:
+        A configured Flask application instance.
+    """
     app = Flask(__name__)
     app.jinja_env.globals["format_number"] = format_number
 
@@ -22,19 +29,19 @@ def create_app() -> Flask:
     @app.get("/")
     def index() -> str | tuple[str, int]:
         with database.connect() as connection:
-            if not database.is_initialized(connection):
+            context = poll_context(connection)
+            if context is None:
                 return render_message("AUpoll is not initialized yet.", 503)
-            poll = database.poll(connection)
-            questions = database.questions(connection)
+            poll, questions = context
         return render_template("poll.html", poll=poll, questions=questions, error=None)
 
     @app.post("/submit")
     def submit() -> Response | tuple[str, int]:
         with database.connect() as connection:
-            if not database.is_initialized(connection):
+            context = poll_context(connection)
+            if context is None:
                 return render_message("AUpoll is not initialized yet.", 503)
-            poll = database.poll(connection)
-            questions = database.questions(connection)
+            poll, questions = context
             parsed, error = parse_answers(request.form, questions)
             if error:
                 return render_template("poll.html", poll=poll, questions=questions, error=error), 400
@@ -44,10 +51,10 @@ def create_app() -> Flask:
     @app.get("/results")
     def results() -> str | tuple[str, int]:
         with database.connect() as connection:
-            if not database.is_initialized(connection):
+            context = poll_context(connection)
+            if context is None:
                 return render_message("AUpoll is not initialized yet.", 503)
-            poll = database.poll(connection)
-            questions = database.questions(connection)
+            poll, questions = context
             answers = database.answers_by_question(connection)
 
         figures = []
@@ -75,7 +82,23 @@ def create_app() -> Flask:
     return app
 
 
+def poll_context(connection: Any) -> tuple[Any, list[Any]] | None:
+    if not database.is_initialized(connection):
+        return None
+    return database.poll(connection), database.questions(connection)
+
+
 def parse_answers(form: Any, questions: list[Any]) -> tuple[dict[str, float], str | None]:
+    """Validate submitted form values against configured poll questions.
+
+    Args:
+        form: Request form data with one value per question id.
+        questions: Question records containing id, minimum, maximum, and step fields.
+
+    Returns:
+        A tuple of parsed answers by question id and an error message. The error
+        message is ``None`` when all answers are valid.
+    """
     answers: dict[str, float] = {}
     for question in questions:
         submitted_value = form.get(question["id"])
@@ -95,6 +118,15 @@ def parse_answers(form: Any, questions: list[Any]) -> tuple[dict[str, float], st
 
 
 def format_number(value: float | None) -> str:
+    """Format optional numeric values for result templates.
+
+    Args:
+        value: Number to display, or ``None`` when the value is unavailable.
+
+    Returns:
+        ``"n/a"`` for missing values, an integer string for whole numbers, or a
+        one-decimal string otherwise.
+    """
     if value is None:
         return "n/a"
     if abs(value - round(value)) < 0.005:
@@ -103,6 +135,15 @@ def format_number(value: float | None) -> str:
 
 
 def count_axis(max_count: int) -> tuple[int, list[dict[str, int | float]]]:
+    """Build a compact y-axis scale for histogram counts.
+
+    Args:
+        max_count: Largest bucket count in the histogram.
+
+    Returns:
+        The axis maximum and ticks containing count values plus template-ready
+        percentage offsets.
+    """
     if max_count <= 0:
         return 1, [{"value": 0, "percent": 0}, {"value": 1, "percent": 100}]
 
@@ -121,6 +162,7 @@ def count_axis(max_count: int) -> tuple[int, list[dict[str, int | float]]]:
 
 
 def _nice_step(minimum: int) -> int:
+    """Return a 1/2/5-based tick step that is at least ``minimum``."""
     magnitude = 1
     while magnitude * 10 <= minimum:
         magnitude *= 10
@@ -132,6 +174,15 @@ def _nice_step(minimum: int) -> int:
 
 
 def render_message(message: str, status: int) -> tuple[str, int]:
+    """Render a minimal HTML status page.
+
+    Args:
+        message: User-facing message to display.
+        status: HTTP status code to return with the page.
+
+    Returns:
+        HTML body and status code suitable for Flask route returns.
+    """
     return (
         f"<!doctype html><title>AUpoll</title><body><main><h1>{html.escape(message)}</h1></main></body>",
         status,

@@ -52,3 +52,16 @@ def test_app_accepts_response_and_renders_results(tmp_path: Path, monkeypatch):
     assert "Mean" in body
     assert "3" in body
 
+
+def test_app_reports_uninitialized_database(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("AUPOLL_DB_PATH", str(tmp_path / "poll.sqlite3"))
+    app = create_app()
+    app.config.update(TESTING=True)
+    client = app.test_client()
+
+    for method, path in (("GET", "/"), ("POST", "/submit"), ("GET", "/results")):
+        response = client.open(path, method=method)
+
+        assert response.status_code == 503
+        assert "AUpoll is not initialized yet." in response.get_data(as_text=True)
+

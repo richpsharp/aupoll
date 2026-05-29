@@ -1,3 +1,5 @@
+"""SQLite persistence helpers for AUpoll."""
+
 from __future__ import annotations
 
 import os
@@ -13,11 +15,25 @@ DEFAULT_DATABASE_PATH = "/data/aupoll.sqlite3"
 
 
 def database_path() -> str:
+    """Return the configured SQLite database path."""
     return os.environ.get("AUPOLL_DB_PATH", DEFAULT_DATABASE_PATH)
 
 
 @contextmanager
 def connect(path: str | None = None) -> Iterator[sqlite3.Connection]:
+    """Open a transactional SQLite connection with AUpoll defaults.
+
+    Args:
+        path: Optional database path. When omitted, ``AUPOLL_DB_PATH`` or the
+            default container path is used.
+
+    Yields:
+        A SQLite connection with row objects and foreign keys enabled.
+
+    Raises:
+        Exception: Re-raises any exception from the managed block after rolling
+            back the transaction.
+    """
     database_file_path = path or database_path()
     Path(database_file_path).parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(database_file_path)
@@ -34,6 +50,7 @@ def connect(path: str | None = None) -> Iterator[sqlite3.Connection]:
 
 
 def is_initialized(connection: sqlite3.Connection) -> bool:
+    """Return whether the database has the AUpoll schema and metadata."""
     meta_table_row = connection.execute(
         "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'meta'"
     ).fetchone()
@@ -44,6 +61,12 @@ def is_initialized(connection: sqlite3.Connection) -> bool:
 
 
 def initialize(connection: sqlite3.Connection, config: PollConfig) -> None:
+    """Create the AUpoll schema and seed it from configuration.
+
+    Args:
+        connection: Open SQLite connection to initialize.
+        config: Validated poll configuration to store.
+    """
     connection.executescript(
         """
         CREATE TABLE meta (
@@ -121,14 +144,25 @@ def initialize(connection: sqlite3.Connection, config: PollConfig) -> None:
 
 
 def poll(connection: sqlite3.Connection) -> sqlite3.Row:
+    """Fetch the single configured poll row."""
     return connection.execute("SELECT * FROM poll WHERE id = 1").fetchone()
 
 
 def questions(connection: sqlite3.Connection) -> list[sqlite3.Row]:
+    """Fetch configured questions in display order."""
     return list(connection.execute("SELECT * FROM questions ORDER BY position"))
 
 
 def insert_response(connection: sqlite3.Connection, answers: dict[str, float]) -> int:
+    """Persist a respondent's answers.
+
+    Args:
+        connection: Open SQLite connection.
+        answers: Numeric answer values keyed by question id.
+
+    Returns:
+        The inserted response id.
+    """
     cursor = connection.execute("INSERT INTO responses DEFAULT VALUES")
     response_id = int(cursor.lastrowid)
     connection.executemany(
@@ -139,9 +173,9 @@ def insert_response(connection: sqlite3.Connection, answers: dict[str, float]) -
 
 
 def answers_by_question(connection: sqlite3.Connection) -> dict[str, list[float]]:
+    """Fetch submitted answer values grouped by question id."""
     rows = connection.execute("SELECT question_id, value FROM answers ORDER BY question_id, value").fetchall()
     answers: dict[str, list[float]] = {}
     for row in rows:
         answers.setdefault(row["question_id"], []).append(float(row["value"]))
     return answers
-
