@@ -21,6 +21,7 @@ def create_app() -> Flask:
     """
     app = Flask(__name__)
     app.jinja_env.globals["format_number"] = format_number
+    app.jinja_env.globals["format_percent"] = format_percent
 
     @app.get("/health")
     def health() -> dict[str, str]:
@@ -60,16 +61,22 @@ def create_app() -> Flask:
         figures = []
         for question in questions:
             values = answers.get(question["id"], [])
+            summary = summarize(values)
             buckets = histogram(values, question["minimum"], question["maximum"], question["step"])
             max_count = max(int(bucket["count"]) for bucket in buckets)
             y_max, y_ticks = count_axis(max_count)
             figures.append(
                 {
                     "question": question,
-                    "summary": summarize(values),
+                    "summary": summary,
                     "buckets": buckets,
                     "y_max": y_max,
                     "y_ticks": y_ticks,
+                    "wwf_metric": wwf_metric(
+                        summary.mean,
+                        question["minimum"],
+                        question["maximum"],
+                    ),
                 }
             )
         return render_template(
@@ -132,6 +139,40 @@ def format_number(value: float | None) -> str:
     if abs(value - round(value)) < 0.005:
         return str(int(round(value)))
     return f"{value:.1f}"
+
+
+def format_percent(value: float | None) -> str:
+    """Format optional percentage values for result templates.
+
+    Args:
+        value: Percentage to display, or ``None`` when unavailable.
+
+    Returns:
+        ``"n/a"`` for missing values, an integer percent for whole values, or a
+        one-decimal percent otherwise.
+    """
+    if value is None:
+        return "n/a"
+    if abs(value - round(value)) < 0.005:
+        return f"{int(round(value))}%"
+    return f"{value:.1f}%"
+
+
+def wwf_metric(mean: float | None, minimum: float, maximum: float) -> float | None:
+    """Return the mean's percentage position between configured scale bounds.
+
+    Args:
+        mean: Response mean, or ``None`` when no responses exist.
+        minimum: Lowest configured value on the question scale.
+        maximum: Highest configured value on the question scale.
+
+    Returns:
+        ``None`` without responses, otherwise a percentage where the configured
+        minimum is ``0`` and maximum is ``100``.
+    """
+    if mean is None:
+        return None
+    return (mean - minimum) / (maximum - minimum) * 100
 
 
 def count_axis(max_count: int) -> tuple[int, list[dict[str, int | float]]]:
