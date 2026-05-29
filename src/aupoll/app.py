@@ -55,14 +55,14 @@ def create_app() -> Flask:
             values = answers.get(question["id"], [])
             buckets = histogram(values, question["minimum"], question["maximum"], question["step"])
             max_count = max([int(bucket["count"]) for bucket in buckets] or [0])
-            count_axis_maximum, count_axis_ticks = count_axis(max_count)
+            y_max, y_ticks = count_axis(max_count)
             figures.append(
                 {
                     "question": question,
                     "summary": summarize(values),
                     "buckets": buckets,
-                    "count_axis_maximum": count_axis_maximum,
-                    "count_axis_ticks": count_axis_ticks,
+                    "y_max": y_max,
+                    "y_ticks": y_ticks,
                 }
             )
         return render_template(

@@ -7,9 +7,9 @@ def test_summarize_values():
     assert summary.count == 5
     assert summary.mean == 3
     assert summary.median == 3
-    assert round(summary.standard_deviation, 3) == 1.581
-    assert round(summary.fifth_percentile, 1) == 1.2
-    assert summary.ninety_fifth_percentile == 4.8
+    assert round(summary.stdev, 3) == 1.581
+    assert round(summary.p05, 1) == 1.2
+    assert summary.p95 == 4.8
 
 
 def test_histogram_counts_scale_buckets():
