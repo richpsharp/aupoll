@@ -11,7 +11,19 @@ services:
 
   app:
     build: .
-    command: ["gunicorn", "--bind", "0.0.0.0:8000", "aupoll.app:create_app()"]
+    command:
+      [
+        "gunicorn",
+        "--bind",
+        "0.0.0.0:8000",
+        "--worker-class",
+        "gthread",
+        "--threads",
+        "4",
+        "--keep-alive",
+        "2",
+        "aupoll.app:create_app()",
+      ]
     environment:
       AUPOLL_DB_PATH: /data/aupoll.sqlite3
     ports:
