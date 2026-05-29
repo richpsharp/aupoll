@@ -179,4 +179,3 @@ def answers_by_question(connection: sqlite3.Connection) -> dict[str, list[float]
     for row in rows:
         values.setdefault(row["question_id"], []).append(float(row["value"]))
     return values
-
