@@ -29,19 +29,19 @@ def create_app() -> Flask:
     @app.get("/")
     def index() -> str | tuple[str, int]:
         with db.connect() as connection:
-            if not db.is_initialized(connection):
+            context = poll_context(connection)
+            if context is None:
                 return render_message("AUpoll is not initialized yet.", 503)
-            poll = db.poll(connection)
-            questions = db.questions(connection)
+            poll, questions = context
         return render_template("poll.html", poll=poll, questions=questions, error=None)
 
     @app.post("/submit")
     def submit() -> Response | tuple[str, int]:
         with db.connect() as connection:
-            if not db.is_initialized(connection):
+            context = poll_context(connection)
+            if context is None:
                 return render_message("AUpoll is not initialized yet.", 503)
-            poll = db.poll(connection)
-            questions = db.questions(connection)
+            poll, questions = context
             parsed, error = parse_answers(request.form, questions)
             if error:
                 return render_template("poll.html", poll=poll, questions=questions, error=error), 400
@@ -51,10 +51,10 @@ def create_app() -> Flask:
     @app.get("/results")
     def results() -> str | tuple[str, int]:
         with db.connect() as connection:
-            if not db.is_initialized(connection):
+            context = poll_context(connection)
+            if context is None:
                 return render_message("AUpoll is not initialized yet.", 503)
-            poll = db.poll(connection)
-            questions = db.questions(connection)
+            poll, questions = context
             answers = db.answers_by_question(connection)
 
         figures = []
@@ -80,6 +80,12 @@ def create_app() -> Flask:
         )
 
     return app
+
+
+def poll_context(connection: Any) -> tuple[Any, list[Any]] | None:
+    if not db.is_initialized(connection):
+        return None
+    return db.poll(connection), db.questions(connection)
 
 
 def parse_answers(form: Any, questions: list[Any]) -> tuple[dict[str, float], str | None]:
