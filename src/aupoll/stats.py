@@ -38,7 +38,14 @@ def summarize(values: list[float]) -> Summary:
         optional statistics set to ``None``.
     """
     if not values:
-        return Summary(count=0, mean=None, median=None, stdev=None, p05=None, p95=None)
+        return Summary(
+            count=0,
+            mean=None,
+            median=None,
+            stdev=None,
+            p05=None,
+            p95=None,
+        )
 
     ordered = sorted(values)
     count = len(ordered)
