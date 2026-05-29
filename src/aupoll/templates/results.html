@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}{{ poll["results_title"] }}{% endblock %}
+
+{% block body %}
+<div class="eyebrow">AUpoll Results</div>
+<h1>{{ poll["results_title"] }}</h1>
+{% if submitted %}<p class="thanks">Thanks. Your response has been added.</p>{% endif %}
+<p class="subtitle">Each question shows the distribution of responses and a compact statistical summary.</p>
+
+<div class="rule"></div>
+
+{% for figure in figures %}
+<section class="figure">
+  <h2>{{ figure.question["prompt"] }}</h2>
+  {% if figure.summary.count %}
+  <div class="plot">
+    <div class="axis-label">Frequency</div>
+    <div class="y-axis">
+      {% for tick in figure.y_ticks %}
+      <span style="--tick-percent: {{ tick.percent }}">{{ tick.value }}</span>
+      {% endfor %}
+    </div>
+    <div>
+      <div class="histogram" style="--bucket-count: {{ figure.buckets|length }}">
+        {% for bucket in figure.buckets %}
+        {% set height = 2 if figure.y_max == 0 else (bucket.count / figure.y_max * 100) %}
+        <div class="bar-wrap" title="{{ bucket.count }} responses">
+          <div class="bar {% if bucket.count == 0 %}empty{% endif %}" style="height: {{ height }}%"></div>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="ticks" style="--bucket-count: {{ figure.buckets|length }}">
+        {% for bucket in figure.buckets %}<span>{{ format_number(bucket.value) }}</span>{% endfor %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <p class="empty-note">No responses yet.</p>
+  {% endif %}
+  <dl class="stats">
+    <dt>Responses</dt><dd>{{ figure.summary.count }}</dd>
+    <dt>Mean</dt><dd>{{ format_number(figure.summary.mean) }}</dd>
+    <dt>Median</dt><dd>{{ format_number(figure.summary.median) }}</dd>
+    <dt>Stdev</dt><dd>{{ format_number(figure.summary.stdev) }}</dd>
+    <dt>5th pct.</dt><dd>{{ format_number(figure.summary.p05) }}</dd>
+    <dt>95th pct.</dt><dd>{{ format_number(figure.summary.p95) }}</dd>
+  </dl>
+</section>
+{% endfor %}
+
+<p><a class="back" href="{{ url_for('index') }}">Add another response</a></p>
+{% endblock %}

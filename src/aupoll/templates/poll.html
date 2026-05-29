@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}{{ poll["title"] }}{% endblock %}
+
+{% block body %}
+<div class="eyebrow">Actually Useful Poll</div>
+<h1>{{ poll["title"] }}</h1>
+{% if poll["subtitle"] %}<p class="subtitle">{{ poll["subtitle"] }}</p>{% endif %}
+<div class="rule"></div>
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+<form method="post" action="{{ url_for('submit') }}">
+  {% for question in questions %}
+  <fieldset>
+    <legend>{{ question["prompt"] }}</legend>
+    {% if question["help"] %}<p class="help">{{ question["help"] }}</p>{% endif %}
+    <div class="scale">
+      {% set steps = ((question["maximum"] - question["minimum"]) / question["step"])|round|int %}
+      {% for offset in range(steps + 1) %}
+      {% set value = question["minimum"] + (offset * question["step"]) %}
+      <label class="choice">
+        <input type="radio" name="{{ question["id"] }}" value="{{ value }}" required>
+        <span>{{ format_number(value) }}</span>
+      </label>
+      {% endfor %}
+    </div>
+    <div class="labels">
+      <span>{{ question["min_label"] }}</span>
+      <span>{{ question["max_label"] }}</span>
+    </div>
+  </fieldset>
+  {% endfor %}
+  <button type="submit">{{ poll["submit_label"] }}</button>
+</form>
+{% endblock %}
+

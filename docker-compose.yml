@@ -1,0 +1,38 @@
+services:
+  init:
+    build: .
+    command: ["python", "-m", "aupoll.init_db"]
+    environment:
+      AUPOLL_DB_PATH: /data/aupoll.sqlite3
+      AUPOLL_CONFIG_PATH: /config/poll.yaml
+    volumes:
+      - ./config/poll.yaml:/config/poll.yaml:ro
+      - aupoll_data:/data
+
+  app:
+    build: .
+    command:
+      [
+        "gunicorn",
+        "--bind",
+        "0.0.0.0:8000",
+        "--worker-class",
+        "gthread",
+        "--threads",
+        "4",
+        "--keep-alive",
+        "2",
+        "aupoll.app:create_app()",
+      ]
+    environment:
+      AUPOLL_DB_PATH: /data/aupoll.sqlite3
+    ports:
+      - "8000:8000"
+    volumes:
+      - aupoll_data:/data
+    depends_on:
+      init:
+        condition: service_completed_successfully
+
+volumes:
+  aupoll_data:
